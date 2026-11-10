@@ -7,9 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -94,6 +96,64 @@ public class LivroController {
     @GetMapping("/livros/novo")
     public String formularioLivro(Model model) {
         return "livro-novo";
+    }
+
+    @GetMapping("/livros/atualizar/{id}")
+    public String formularioLivroAtualizar(@PathVariable(name="id") Long id, Model model) {
+        Livro livro = livroRepository.buscarPorId(id);
+
+        if (livro == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        model.addAttribute("id", livro.getId());
+        model.addAttribute("titulo", livro.getTitulo());
+        model.addAttribute("autor", livro.getAutor());
+        model.addAttribute("ano", livro.getAno());
+        model.addAttribute("preco", livro.getPreco());
+
+        return "livro-atualizar";
+    }
+
+    @PutMapping("/livros/atualizar/{id}")
+    public String atualizar(@RequestParam(name = "titulo") String titulo,
+                            @RequestParam(name = "autor") String autor,
+                            @RequestParam(name = "ano") int ano,
+                            @RequestParam(name = "preco") double preco,
+                            @PathVariable(name = "id") Long id,
+                            Model model) {
+
+        if (titulo.isBlank() || autor.isBlank() || preco <= 0 || id <= 0) {
+            model.addAttribute("erro", "Informe título, autor e um preço maior que zero.");
+            model.addAttribute("id", id);
+            model.addAttribute("titulo", titulo);
+            model.addAttribute("autor", autor);
+            model.addAttribute("ano", ano);
+            model.addAttribute("preco", preco);
+            return "livro-atualizar";
+        }
+
+        Livro livro = new Livro();
+        livro.setId(id);
+        livro.setTitulo(titulo);
+        livro.setAutor(autor);
+        livro.setAno(ano);
+        livro.setPreco(preco);
+        livroRepository.atualizar(livro);
+
+        return "redirect:/livros/html";
+    }
+
+    @DeleteMapping("/livros/deletar/{id}")
+    public String deletar(@PathVariable(name = "id") Long id) {
+        Livro livro = livroRepository.buscarPorId(id);
+
+        if (livro == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        livroRepository.delete(id);
+        return "redirect:/livros/html";
     }
 
     @PostMapping("/livros")
